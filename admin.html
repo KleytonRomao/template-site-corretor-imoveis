@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Painel Administrativo - FastAPI</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-100 min-h-screen text-slate-800">
+
+  <!-- TELA DE LOGIN -->
+  <div id="login-screen" class="flex items-center justify-center min-h-screen">
+    <div class="bg-white p-8 rounded-xl shadow-md w-full max-w-md">
+      <h2 class="text-2xl font-bold mb-6 text-center text-slate-800">Acesso Administrativo</h2>
+      <form onsubmit="fazerLogin(event)" class="space-y-4">
+        <div>
+          <label class="block text-sm font-medium text-slate-600 mb-1">E-mail</label>
+          <input type="email" id="login-email" required class="w-full border border-slate-300 rounded-lg p-2.5 focus:outline-none focus:ring-2 focus:ring-emerald-500">
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-slate-600 mb-1">Senha</label>
+          <input type="password" id="login-senha" required class="w-full border border-slate-300 rounded-lg p-2.5 focus:outline-none focus:ring-2 focus:ring-emerald-500">
+        </div>
+        <button type="submit" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-2.5 rounded-lg transition-colors">Entrar</button>
+      </form>
+      <p id="login-erro" class="text-rose-500 text-sm mt-4 text-center hidden"></p>
+    </div>
+  </div>
+
+  <!-- TELA DO PAINEL ADM -->
+  <div id="admin-screen" class="hidden">
+    <header class="bg-slate-900 text-white p-4 shadow">
+      <div class="max-w-6xl mx-auto flex justify-between items-center">
+        <h1 class="text-xl font-bold">Painel ADM (FastAPI)</h1>
+        <div class="flex items-center space-x-4">
+          <span id="user-display" class="text-sm font-medium text-slate-300"></span>
+          <button onclick="fazerLogout()" class="bg-rose-600 hover:bg-rose-700 text-white text-xs px-3 py-1.5 rounded transition-colors">Sair</button>
+        </div>
+      </div>
+    </header>
+
+    <main class="max-w-6xl mx-auto p-6 space-y-8">
+      <!-- Formulário de Cadastro -->
+      <section class="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
+        <h3 class="text-lg font-bold mb-4">Cadastrar Novo Item</h3>
+        <form onsubmit="cadastrarProduto(event)" class="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div>
+            <label class="block text-xs font-semibold text-slate-500 mb-1">Nome</label>
+            <input type="text" id="prod-nome" required class="w-full border border-slate-300 rounded p-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-500 mb-1">Preço (R$)</label>
+            <input type="number" step="0.01" id="prod-preco" required class="w-full border border-slate-300 rounded p-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-500 mb-1">Estoque</label>
+            <input type="number" id="prod-estoque" required class="w-full border border-slate-300 rounded p-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500">
+          </div>
+          <div class="flex items-end">
+            <button type="submit" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-2 rounded text-sm transition-colors">Salvar</button>
+          </div>
+        </form>
+      </section>
+
+      <!-- Tabela -->
+      <section class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+        <div class="p-4 border-b border-slate-200">
+          <h3 class="text-lg font-bold">Itens Cadastrados</h3>
+        </div>
+        <table class="w-full text-left border-collapse">
+          <thead>
+            <tr class="bg-slate-50 text-slate-500 text-xs uppercase tracking-wider border-b border-slate-200">
+              <th class="p-4">ID</th>
+              <th class="p-4">Nome</th>
+              <th class="p-4">Preço</th>
+              <th class="p-4">Estoque</th>
+              <th class="p-4 text-right">Ações</th>
+            </tr>
+          </thead>
+          <tbody id="produtos-list" class="divide-y divide-slate-100 text-sm">
+            <!-- Renderizado via JS -->
+          </tbody>
+        </table>
+      </section>
+    </main>
+  </div>
+
+  <script>
+    const API_URL = 'http://191.252.218:8000/api';
+
+    window.onload = function() {
+      const token = localStorage.getItem('token');
+      if (token) {
+        mostrarPainel();
+      }
+    };
+
+    async function fazerLogin(e) {
+      e.preventDefault();
+      const email = document.getElementById('login-email').value;
+      const senha = document.getElementById('login-senha').value;
+      const erroEl = document.getElementById('login-erro');
+
+      try {
+        const res = await fetch(`${API_URL}/auth/login`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, senha })
+        });
+
+        const data = await res.json();
+
+        if (!res.ok) {
+          erroEl.textContent = data.detail || 'Erro ao realizar login.';
+          erroEl.classList.remove('hidden');
+          return;
+        }
+
+        localStorage.setItem('token', data.token);
+        localStorage.setItem('usuario', JSON.stringify(data.usuario));
+        mostrarPainel();
+      } catch (err) {
+        erroEl.textContent = 'Erro ao conectar ao servidor.';
+        erroEl.classList.remove('hidden');
+      }
+    }
+
+    function mostrarPainel() {
+      document.getElementById('login-screen').classList.add('hidden');
+      document.getElementById('admin-screen').classList.remove('hidden');
+      
+      const usuario = JSON.parse(localStorage.getItem('usuario'));
+      if(usuario) {
+        document.getElementById('user-display').textContent = `Olá, ${usuario.nome}`;
+      }
+      
+      carregarProdutos();
+    }
+
+    function fazerLogout() {
+      localStorage.removeItem('token');
+      localStorage.removeItem('usuario');
+      document.getElementById('admin-screen').classList.add('hidden');
+      document.getElementById('login-screen').classList.remove('hidden');
+    }
+
+    async function carregarProdutos() {
+      const token = localStorage.getItem('token');
+      try {
+        const res = await fetch(`${API_URL}/produtos`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+
+        if (res.status === 401) {
+          fazerLogout();
+          return;
+        }
+
+        const produtos = await res.json();
+        const tbody = document.getElementById('produtos-list');
+        
+        tbody.innerHTML = produtos.map(p => `
+          <tr class="hover:bg-slate-50">
+            <td class="p-4 font-mono text-slate-500">${p.id}</td>
+            <td class="p-4 font-semibold text-slate-800">${p.nome}</td>
+            <td class="p-4">R$ ${parseFloat(p.preco).toFixed(2)}</td>
+            <td class="p-4">${p.estoque} un.</td>
+            <td class="p-4 text-right">
+              <button onclick="deletarProduto(${p.id})" class="text-rose-600 hover:text-rose-800 text-xs font-bold">Excluir</button>
+            </td>
+          </tr>
+        `).join('');
+      } catch (err) {
+        console.error('Erro ao carregar produtos:', err);
+      }
+    }
+
+    async function cadastrarProduto(e) {
+      e.preventDefault();
+      const token = localStorage.getItem('token');
+      const nome = document.getElementById('prod-nome').value;
+      const preco = parseFloat(document.getElementById('prod-preco').value);
+      const estoque = parseInt(document.getElementById('prod-estoque').value);
+
+      try {
+        const res = await fetch(`${API_URL}/produtos`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({ nome, preco, estoque })
+        });
+
+        if (res.ok) {
+          document.getElementById('prod-nome').value = '';
+          document.getElementById('prod-preco').value = '';
+          document.getElementById('prod-estoque').value = '';
+          carregarProdutos();
+        }
+      } catch (err) {
+        console.error('Erro ao cadastrar:', err);
+      }
+    }
+
+    async function deletarProduto(id) {
+      if (!confirm('Deseja realmente remover este item?')) return;
+      
+      const token = localStorage.getItem('token');
+      try {
+        await fetch(`${API_URL}/produtos/${id}`, {
+          method: 'DELETE',
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        carregarProdutos();
+      } catch (err) {
+        console.error('Erro ao deletar:', err);
+      }
+    }
+  </script>
+</body>
+</html>
