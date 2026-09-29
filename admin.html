@@ -3,103 +3,177 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Painel Administrativo - FastAPI</title>
+  <title>ImobPrime - Gestão de Imóveis</title>
   <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
-<body class="bg-slate-100 min-h-screen text-slate-800">
+<body class="bg-slate-100 font-sans min-h-screen text-slate-800">
 
-  <!-- TELA DE LOGIN -->
-  <div id="login-screen" class="flex items-center justify-center min-h-screen">
-    <div class="bg-white p-8 rounded-xl shadow-md w-full max-w-md">
-      <h2 class="text-2xl font-bold mb-6 text-center text-slate-800">Acesso Administrativo</h2>
-      <form onsubmit="fazerLogin(event)" class="space-y-4">
-        <div>
-          <label class="block text-sm font-medium text-slate-600 mb-1">E-mail</label>
-          <input type="email" id="login-email" required class="w-full border border-slate-300 rounded-lg p-2.5 focus:outline-none focus:ring-2 focus:ring-emerald-500">
-        </div>
-        <div>
-          <label class="block text-sm font-medium text-slate-600 mb-1">Senha</label>
-          <input type="password" id="login-senha" required class="w-full border border-slate-300 rounded-lg p-2.5 focus:outline-none focus:ring-2 focus:ring-emerald-500">
-        </div>
-        <button type="submit" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-2.5 rounded-lg transition-colors">Entrar</button>
-      </form>
-      <p id="login-erro" class="text-rose-500 text-sm mt-4 text-center hidden"></p>
+  <header class="bg-slate-900 text-white shadow-md">
+    <div class="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
+      <div class="flex items-center space-x-3">
+        <div class="w-8 h-8 bg-emerald-600 rounded flex items-center justify-center font-bold">IP</div>
+        <span class="text-xl font-bold">ImobPrime Painel</span>
+      </div>
+      <div id="user-info" class="hidden items-center space-x-4">
+        <span id="user-name" class="text-sm font-semibold text-emerald-400"></span>
+        <button onclick="logout()" class="bg-rose-600 hover:bg-rose-700 text-xs text-white px-3 py-1.5 rounded font-bold transition">Sair</button>
+      </div>
     </div>
-  </div>
+  </header>
 
-  <!-- TELA DO PAINEL ADM -->
-  <div id="admin-screen" class="hidden">
-    <header class="bg-slate-900 text-white p-4 shadow">
-      <div class="max-w-6xl mx-auto flex justify-between items-center">
-        <h1 class="text-xl font-bold">Painel ADM (FastAPI)</h1>
-        <div class="flex items-center space-x-4">
-          <span id="user-display" class="text-sm font-medium text-slate-300"></span>
-          <button onclick="fazerLogout()" class="bg-rose-600 hover:bg-rose-700 text-white text-xs px-3 py-1.5 rounded transition-colors">Sair</button>
+  <main class="max-w-6xl mx-auto p-4 sm:p-6">
+
+    <!-- AUTENTICAÇÃO -->
+    <div id="auth-container" class="max-w-md mx-auto bg-white p-6 rounded-xl shadow-md border border-slate-200">
+      <div class="flex border-b mb-6">
+        <button id="btn-tab-login" onclick="switchAuthTab('login')" class="w-1/2 py-2 font-bold border-b-2 border-emerald-600 text-emerald-600">Login</button>
+        <button id="btn-tab-register" onclick="switchAuthTab('register')" class="w-1/2 py-2 font-bold border-b-2 border-transparent text-slate-400">Cadastrar</button>
+      </div>
+
+      <form id="form-login" onsubmit="handleLogin(event)" class="space-y-4">
+        <div>
+          <label class="block text-xs font-bold text-slate-600 uppercase mb-1">E-mail</label>
+          <input type="email" id="login-email" required class="w-full bg-slate-50 border p-2.5 rounded text-sm">
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Senha</label>
+          <input type="password" id="login-senha" required class="w-full bg-slate-50 border p-2.5 rounded text-sm">
+        </div>
+        <button type="submit" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2.5 rounded transition">Entrar</button>
+      </form>
+
+      <form id="form-register" onsubmit="handleRegister(event)" class="space-y-4 hidden">
+        <div>
+          <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Nome Completo</label>
+          <input type="text" id="reg-nome" required class="w-full bg-slate-50 border p-2.5 rounded text-sm">
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-slate-600 uppercase mb-1">E-mail</label>
+          <input type="email" id="reg-email" required class="w-full bg-slate-50 border p-2.5 rounded text-sm">
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Senha</label>
+          <input type="password" id="reg-senha" required class="w-full bg-slate-50 border p-2.5 rounded text-sm">
+        </div>
+        <button type="submit" class="w-full bg-slate-800 hover:bg-slate-900 text-white font-bold py-2.5 rounded transition">Criar Conta</button>
+      </form>
+
+      <div id="auth-alert" class="hidden mt-4 p-3 text-xs rounded font-semibold text-center"></div>
+    </div>
+
+    <!-- PAINEL DE GESTÃO DE IMÓVEIS -->
+    <div id="dashboard-container" class="hidden space-y-8">
+      
+      <!-- FORMULÁRIO DE CADASTRO DE IMÓVEL -->
+      <div class="bg-white p-6 rounded-xl shadow-md border border-slate-200">
+        <h2 class="font-bold text-lg text-slate-800 mb-4 border-b pb-2 flex items-center space-x-2">
+          <i class="fa-solid fa-house-medical text-emerald-600"></i>
+          <span>Cadastrar Novo Imóvel</span>
+        </h2>
+
+        <form onsubmit="handleCreateProperty(event)" class="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div class="md:col-span-2">
+            <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Título do Anúncio</label>
+            <input type="text" id="imov-titulo" placeholder="Ex: Casa com Piscina em Condomínio" required class="w-full bg-slate-50 border p-2.5 rounded text-sm">
+          </div>
+
+          <div>
+            <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Tipo de Imóvel</label>
+            <select id="imov-tipo" class="w-full bg-slate-50 border p-2.5 rounded text-sm">
+              <option value="Casa">Casa</option>
+              <option value="Apartamento">Apartamento</option>
+              <option value="Cobertura">Cobertura</option>
+              <option value="Terreno">Terreno</option>
+            </select>
+          </div>
+
+          <div>
+            <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Finalidade</label>
+            <select id="imov-finalidade" class="w-full bg-slate-50 border p-2.5 rounded text-sm">
+              <option value="Venda">Venda</option>
+              <option value="Aluguel">Aluguel</option>
+            </select>
+          </div>
+
+          <div>
+            <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Preço (R$)</label>
+            <input type="number" step="0.01" id="imov-preco" placeholder="500000" required class="w-full bg-slate-50 border p-2.5 rounded text-sm">
+          </div>
+
+          <div>
+            <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Área Útil (m²)</label>
+            <input type="number" step="0.1" id="imov-area" placeholder="120" required class="w-full bg-slate-50 border p-2.5 rounded text-sm">
+          </div>
+
+          <div class="md:col-span-3">
+            <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Endereço Completo</label>
+            <input type="text" id="imov-endereco" placeholder="Rua, Número, Bairro, Cidade - UF" required class="w-full bg-slate-50 border p-2.5 rounded text-sm">
+          </div>
+
+          <div>
+            <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Quartos</label>
+            <input type="number" id="imov-quartos" value="3" required class="w-full bg-slate-50 border p-2.5 rounded text-sm">
+          </div>
+
+          <div>
+            <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Banheiros</label>
+            <input type="number" id="imov-banheiros" value="2" required class="w-full bg-slate-50 border p-2.5 rounded text-sm">
+          </div>
+
+          <div>
+            <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Vagas de Garagem</label>
+            <input type="number" id="imov-vagas" value="2" required class="w-full bg-slate-50 border p-2.5 rounded text-sm">
+          </div>
+
+          <div class="md:col-span-3">
+            <label class="block text-xs font-bold text-slate-600 uppercase mb-1">URL da Imagem/Foto</label>
+            <input type="url" id="imov-imagem" placeholder="https://exemplo.com/foto-casa.jpg" required class="w-full bg-slate-50 border p-2.5 rounded text-sm">
+          </div>
+
+          <div class="md:col-span-3">
+            <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Descrição do Imóvel</label>
+            <textarea id="imov-descricao" rows="3" placeholder="Detalhes adicionais, acabamento, condomínio..." class="w-full bg-slate-50 border p-2.5 rounded text-sm"></textarea>
+          </div>
+
+          <button type="submit" class="md:col-span-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 rounded text-sm transition">
+            Cadastrar Imóvel
+          </button>
+        </form>
+      </div>
+
+      <!-- LISTA DE IMÓVEIS CADASTRADOS -->
+      <div>
+        <h2 class="font-bold text-xl text-slate-800 mb-4">Imóveis Cadastrados</h2>
+        <div id="properties-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <!-- Renderizado via JS -->
         </div>
       </div>
-    </header>
 
-    <main class="max-w-6xl mx-auto p-6 space-y-8">
-      <!-- Formulário de Cadastro -->
-      <section class="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
-        <h3 class="text-lg font-bold mb-4">Cadastrar Novo Item</h3>
-        <form onsubmit="cadastrarProduto(event)" class="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <div>
-            <label class="block text-xs font-semibold text-slate-500 mb-1">Nome</label>
-            <input type="text" id="prod-nome" required class="w-full border border-slate-300 rounded p-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500">
-          </div>
-          <div>
-            <label class="block text-xs font-semibold text-slate-500 mb-1">Preço (R$)</label>
-            <input type="number" step="0.01" id="prod-preco" required class="w-full border border-slate-300 rounded p-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500">
-          </div>
-          <div>
-            <label class="block text-xs font-semibold text-slate-500 mb-1">Estoque</label>
-            <input type="number" id="prod-estoque" required class="w-full border border-slate-300 rounded p-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500">
-          </div>
-          <div class="flex items-end">
-            <button type="submit" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-2 rounded text-sm transition-colors">Salvar</button>
-          </div>
-        </form>
-      </section>
+    </div>
 
-      <!-- Tabela -->
-      <section class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-        <div class="p-4 border-b border-slate-200">
-          <h3 class="text-lg font-bold">Itens Cadastrados</h3>
-        </div>
-        <table class="w-full text-left border-collapse">
-          <thead>
-            <tr class="bg-slate-50 text-slate-500 text-xs uppercase tracking-wider border-b border-slate-200">
-              <th class="p-4">ID</th>
-              <th class="p-4">Nome</th>
-              <th class="p-4">Preço</th>
-              <th class="p-4">Estoque</th>
-              <th class="p-4 text-right">Ações</th>
-            </tr>
-          </thead>
-          <tbody id="produtos-list" class="divide-y divide-slate-100 text-sm">
-            <!-- Renderizado via JS -->
-          </tbody>
-        </table>
-      </section>
-    </main>
-  </div>
+  </main>
 
   <script>
-    const API_URL = 'https://spyjk.top:8086/api';
+    const API_URL = "https://spyjk.top:8086/api";
 
-    window.onload = function() {
-      const token = localStorage.getItem('token');
-      if (token) {
-        mostrarPainel();
-      }
-    };
+    function showAlert(msg, isSuccess = false) {
+      const alertBox = document.getElementById('auth-alert');
+      alertBox.textContent = msg;
+      alertBox.className = `mt-4 p-3 text-xs rounded font-semibold text-center ${isSuccess ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800'}`;
+      alertBox.classList.remove('hidden');
+    }
 
-    async function fazerLogin(e) {
+    function switchAuthTab(tab) {
+      document.getElementById('form-login').classList.toggle('hidden', tab !== 'login');
+      document.getElementById('form-register').classList.toggle('hidden', tab !== 'register');
+      document.getElementById('auth-alert').classList.add('hidden');
+    }
+
+    async function handleLogin(e) {
       e.preventDefault();
       const email = document.getElementById('login-email').value;
       const senha = document.getElementById('login-senha').value;
-      const erroEl = document.getElementById('login-erro');
 
       try {
         const res = await fetch(`${API_URL}/auth/login`, {
@@ -107,116 +181,152 @@
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ email, senha })
         });
-
         const data = await res.json();
 
-        if (!res.ok) {
-          erroEl.textContent = data.detail || 'Erro ao realizar login.';
-          erroEl.classList.remove('hidden');
-          return;
-        }
+        if (!res.ok) throw new Error(data.detail || 'Falha no login');
 
         localStorage.setItem('token', data.token);
         localStorage.setItem('usuario', JSON.stringify(data.usuario));
-        mostrarPainel();
+        checkAuth();
       } catch (err) {
-        erroEl.textContent = 'Erro ao conectar ao servidor.';
-        erroEl.classList.remove('hidden');
+        showAlert(err.message);
       }
     }
 
-    function mostrarPainel() {
-      document.getElementById('login-screen').classList.add('hidden');
-      document.getElementById('admin-screen').classList.remove('hidden');
-      
-      const usuario = JSON.parse(localStorage.getItem('usuario'));
-      if(usuario) {
-        document.getElementById('user-display').textContent = `Olá, ${usuario.nome}`;
-      }
-      
-      carregarProdutos();
-    }
+    async function handleRegister(e) {
+      e.preventDefault();
+      const nome = document.getElementById('reg-nome').value;
+      const email = document.getElementById('reg-email').value;
+      const senha = document.getElementById('reg-senha').value;
 
-    function fazerLogout() {
-      localStorage.removeItem('token');
-      localStorage.removeItem('usuario');
-      document.getElementById('admin-screen').classList.add('hidden');
-      document.getElementById('login-screen').classList.remove('hidden');
-    }
-
-    async function carregarProdutos() {
-      const token = localStorage.getItem('token');
       try {
-        const res = await fetch(`${API_URL}/produtos`, {
-          headers: { 'Authorization': `Bearer ${token}` }
+        const res = await fetch(`${API_URL}/auth/register`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ nome, email, senha })
         });
+        const data = await res.json();
 
-        if (res.status === 401) {
-          fazerLogout();
-          return;
-        }
+        if (!res.ok) throw new Error(data.detail || 'Erro ao registrar');
 
-        const produtos = await res.json();
-        const tbody = document.getElementById('produtos-list');
-        
-        tbody.innerHTML = produtos.map(p => `
-          <tr class="hover:bg-slate-50">
-            <td class="p-4 font-mono text-slate-500">${p.id}</td>
-            <td class="p-4 font-semibold text-slate-800">${p.nome}</td>
-            <td class="p-4">R$ ${parseFloat(p.preco).toFixed(2)}</td>
-            <td class="p-4">${p.estoque} un.</td>
-            <td class="p-4 text-right">
-              <button onclick="deletarProduto(${p.id})" class="text-rose-600 hover:text-rose-800 text-xs font-bold">Excluir</button>
-            </td>
-          </tr>
+        showAlert('Conta criada com sucesso! Faça login.', true);
+        switchAuthTab('login');
+      } catch (err) {
+        showAlert(err.message);
+      }
+    }
+
+    function checkAuth() {
+      const token = localStorage.getItem('token');
+      const usuario = JSON.parse(localStorage.getItem('usuario') || '{}');
+
+      if (token && usuario.nome) {
+        document.getElementById('auth-container').classList.add('hidden');
+        document.getElementById('dashboard-container').classList.remove('hidden');
+        document.getElementById('user-info').classList.remove('hidden');
+        document.getElementById('user-info').classList.add('flex');
+        document.getElementById('user-name').textContent = `Olá, ${usuario.nome}`;
+        loadProperties();
+      } else {
+        document.getElementById('auth-container').classList.remove('hidden');
+        document.getElementById('dashboard-container').classList.add('hidden');
+        document.getElementById('user-info').classList.add('hidden');
+      }
+    }
+
+    function logout() {
+      localStorage.clear();
+      checkAuth();
+    }
+
+    async function loadProperties() {
+      try {
+        const res = await fetch(`${API_URL}/imoveis`);
+        const data = await res.json();
+
+        const grid = document.getElementById('properties-grid');
+        grid.innerHTML = data.map(p => `
+          <div class="bg-white rounded-xl overflow-hidden shadow border border-slate-200 flex flex-col justify-between">
+            <div>
+              <img src="${p.imagem_url}" alt="${p.titulo}" class="w-full h-48 object-cover">
+              <div class="p-4">
+                <div class="flex justify-between items-center mb-1">
+                  <span class="text-xs font-bold uppercase text-emerald-600">${p.tipo} • ${p.finalidade}</span>
+                  <span class="text-lg font-extrabold text-slate-900">R$ ${p.preco.toLocaleString('pt-BR')}</span>
+                </div>
+                <h3 class="font-bold text-slate-800 text-base line-clamp-1">${p.titulo}</h3>
+                <p class="text-xs text-slate-500 mt-1 line-clamp-1"><i class="fa-solid fa-location-dot mr-1"></i>${p.endereco}</p>
+                <div class="mt-4 pt-3 border-t grid grid-cols-3 gap-2 text-center text-xs font-medium text-slate-600">
+                  <div><i class="fa-solid fa-bed mr-1"></i>${p.quartos} qtos</div>
+                  <div><i class="fa-solid fa-bath mr-1"></i>${p.banheiros} ban</div>
+                  <div><i class="fa-solid fa-ruler-combined mr-1"></i>${p.area} m²</div>
+                </div>
+              </div>
+            </div>
+            <div class="p-4 pt-0">
+              <button onclick="deleteProperty(${p.id})" class="w-full bg-rose-50 hover:bg-rose-100 text-rose-600 font-bold text-xs py-2 rounded transition">
+                Remover Imóvel
+              </button>
+            </div>
+          </div>
         `).join('');
       } catch (err) {
-        console.error('Erro ao carregar produtos:', err);
+        console.error('Erro ao carregar imóveis');
       }
     }
 
-    async function cadastrarProduto(e) {
+    async function handleCreateProperty(e) {
       e.preventDefault();
       const token = localStorage.getItem('token');
-      const nome = document.getElementById('prod-nome').value;
-      const preco = parseFloat(document.getElementById('prod-preco').value);
-      const estoque = parseInt(document.getElementById('prod-estoque').value);
+      
+      const payload = {
+        titulo: document.getElementById('imov-titulo').value,
+        tipo: document.getElementById('imov-tipo').value,
+        finalidade: document.getElementById('imov-finalidade').value,
+        preco: parseFloat(document.getElementById('imov-preco').value),
+        endereco: document.getElementById('imov-endereco').value,
+        quartos: parseInt(document.getElementById('imov-quartos').value),
+        banheiros: parseInt(document.getElementById('imov-banheiros').value),
+        vagas: parseInt(document.getElementById('imov-vagas').value),
+        area: parseFloat(document.getElementById('imov-area').value),
+        imagem_url: document.getElementById('imov-imagem').value,
+        descricao: document.getElementById('imov-descricao').value
+      };
 
       try {
-        const res = await fetch(`${API_URL}/produtos`, {
+        const res = await fetch(`${API_URL}/imoveis`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${token}`
           },
-          body: JSON.stringify({ nome, preco, estoque })
+          body: JSON.stringify(payload)
         });
 
         if (res.ok) {
-          document.getElementById('prod-nome').value = '';
-          document.getElementById('prod-preco').value = '';
-          document.getElementById('prod-estoque').value = '';
-          carregarProdutos();
+          e.target.reset();
+          loadProperties();
         }
       } catch (err) {
-        console.error('Erro ao cadastrar:', err);
+        console.error('Erro ao criar imóvel');
       }
     }
 
-    async function deletarProduto(id) {
-      if (!confirm('Deseja realmente remover este item?')) return;
-      
+    async function deleteProperty(id) {
       const token = localStorage.getItem('token');
       try {
-        await fetch(`${API_URL}/produtos/${id}`, {
+        const res = await fetch(`${API_URL}/imoveis/${id}`, {
           method: 'DELETE',
           headers: { 'Authorization': `Bearer ${token}` }
         });
-        carregarProdutos();
+
+        if (res.ok) loadProperties();
       } catch (err) {
-        console.error('Erro ao deletar:', err);
+        console.error('Erro ao remover imóvel');
       }
     }
+
+    window.onload = checkAuth;
   </script>
 </body>
 </html>
